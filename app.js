@@ -4,7 +4,15 @@ var budgetController = (function () {
         this.id = id;
         this.description = desc;
         this.value = value;
+        this.perc = -1;
     };
+
+    Expense.prototype.calcPerc = function(totalInc) {
+        if(totalInc>0) {this.perc = Math.round((this.value/totalInc)*100)};
+    };
+
+    Expense.prototype.getPerc = function() {return this.perc};
+
     var Income = function (id, desc, value) {
         this.id = id;
         this.description = desc;
@@ -67,6 +75,17 @@ var budgetController = (function () {
 
         },
 
+        calcPerc: () => {
+            /**
+             * a=20
+             * b=
+             */
+
+            data.allItems.exp.forEach((cur) => {cur.calcPerc(data.totals.inc)});
+        },
+
+        getPerc: () => data.allItems.exp.map((cur) => cur.getPerc()),
+
         getBudget: () => ({
             budget: data.budget,
             totalInc: data.totals.inc,
@@ -94,7 +113,8 @@ var UIController = (function () {
         budgetIncValue: ".budget__income--value",
         budgetExpValue: ".budget__expenses--value",
         budgetExpPerc: ".budget__expenses--percentage",
-        container: '.container'
+        container: '.container',
+        expPerc: '.item__percentage'
 
     }
     
@@ -165,6 +185,20 @@ var UIController = (function () {
             el.parentNode.removeChild(el);
         },
 
+        displayPercs: (percs) => {
+            var fields = document.querySelectorAll(DOMstrings.expPerc);
+
+            var nodeListForEach = (list, callback) => {
+                for (var i=0; i< list.length; i++){
+                    callback(list[i], i);
+                }
+            };
+
+            nodeListForEach(fields, function(cur, idx) {
+                cur.textContent = (percs[idx] > 0) ? percs[idx] + '%' : '---';
+            });
+        },
+
         getDOMstrings: function(){
             return DOMstrings;
         }
@@ -199,7 +233,18 @@ var controller = (function (Bc, UIC) {
         //console.log(budget);
         UIC.displayBudget(budget);
 
-    }    
+    };
+    
+    var updatePerc = () => {
+        // 1. Calc perc
+        Bc.calcPerc();
+
+        // 2. Read perc from Bc
+        var percs = Bc.getPerc();
+
+        // 3. Update UI with new perc
+        UIC.displayPercs(percs);
+    };
 
     var ctrlAddItem = function(){
         var input, newItem;
@@ -217,6 +262,7 @@ var controller = (function (Bc, UIC) {
 
             // 4. Calc and update budget
             updateBudget();
+            updatePerc();
         }
 
 
@@ -236,6 +282,7 @@ var controller = (function (Bc, UIC) {
 
             // 3. Update and show budegt
             updateBudget();
+            updatePerc();
         }
 
     };
